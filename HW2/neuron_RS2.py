@@ -71,18 +71,6 @@ def plot_subgraphs(data_list, tspan, steps, I_values=None, titles=None,
         plt.axis([0, np.max(tspan), ylim[0], ylim[1]])
         plt.xticks([0, np.max(tspan)], labels=[0, steps])
 
-        # X labels
-        if xlabels and i-1 < len(xlabels):
-            plt.xlabel(xlabels[i-1])
-        else:
-            plt.xlabel('time step')
-
-        # Y labels
-        if ylabels and i-1 < len(ylabels):
-            plt.ylabel(ylabels[i-1])
-        else:
-            plt.ylabel('$V_m$')
-
         # Titles
         if I_values and i-1 < len(I_values):
             plt.title(f"I = {I_values[i-1]}")
@@ -96,7 +84,18 @@ def plot_subgraphs(data_list, tspan, steps, I_values=None, titles=None,
 
 # print(len(VV))
 
+def plot_RvI():
+    df = pd.read_csv('./AVG_R_VALUES.csv')
+
+    plt.plot(df['I_input'], df['avg_spike_count'])
+    plt.xlabel('I Value')
+    plt.ylabel('R Value')
+
+    plt.show()
+
 if __name__ == "__main__":
+    # plot_RvI()
+
     spikes_ts_list = []
     uu_list = []
     VV_list = []
@@ -127,7 +126,3 @@ if __name__ == "__main__":
 
 
     plot_subgraphs(VV_list, tspan, steps, I_values)
-
-
-
-
