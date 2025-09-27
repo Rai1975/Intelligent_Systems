@@ -1,5 +1,6 @@
 from matplotlib import pyplot as plt
 import numpy as np
+import pandas as pd
 
 ############# PARAMETERS ##############
 steps = 1000
@@ -11,56 +12,122 @@ d = 6
 V = -64.0
 u = b*V
 
-VV = []
-uu = []
 tau = 0.25
 
+
+###### MAIN FUNCTION #######
 tspan = np.arange(0, steps + tau, tau)
 
-T1 = 0
-spike_ts = []
+def simulation_block(a, b, c, d, V, u, I_input):
+    VV = []
+    uu = []
+    T1 = 0
+    spike_ts = []
+    spike_count = 0
 
-#### SIMULATION TIME ###
-for t in tspan:
-    if (t > T1):
-        I = 1
-    else:
-        I = 0
+    #### SIMULATION TIME ###
+    for t in tspan:
+        if (t > T1):
+            I = I_input
+        else:
+            I = 0
 
-    V = V + tau * (0.04 * (V**(2)) + 5 * V + 140 - u + I)
-    u = u + tau * a * (b * V - u)
+        V = V + tau * (0.04 * (V**(2)) + 5 * V + 140 - u + I)
+        u = u + tau * a * (b * V - u)
 
-    if V > 30:
-        VV.append(30)
-        V = c
-        u += d
-        spike_ts.append(1)
+        if V > 30:
+            VV.append(30)
+            V = c
+            u += d
+            spike_ts.append(1)
 
-    else:
-        VV.append(V)
-        spike_ts.append(0)
+        else:
+            VV.append(V)
+            spike_ts.append(0)
 
-    uu.append(u)
+        uu.append(u)
+
+    for i in spike_ts[801:]:
+        if i == 1:
+            spike_count += 1
+
+    avg_spike_count = spike_count / 800
+
+
+    return spike_ts, uu, VV, avg_spike_count, spike_count
+
+
 
 
 ######## Plotting ##########
-plt.figure(figsize=(10, 8))
-plt.subplot(2, 1, 1)
-plt.plot(tspan, VV)
-plt.axis([0, np.max(tspan), -90, 40])
-plt.xlabel('time step')
-plt.ylabel('$V_m$')
-plt.title('Regular Spiking')
-plt.xticks([0, np.max(tspan)], labels=[0, steps])
-plt.grid(True)
-plt.tight_layout()
-plt.show()
+def plot_subgraphs(data_list, tspan, steps, I_values=None, titles=None,
+                   ylabels=None, xlabels=None, ylim=(-90, 40), figsize=(12, 20)):
+    n_subplots = len(data_list)
+    plt.figure(figsize=figsize)
 
-print(len(VV))
+    for i, data in enumerate(data_list, start=1):
+        plt.subplot(n_subplots, 1, i)
+        plt.plot(tspan, data)
+        plt.axis([0, np.max(tspan), ylim[0], ylim[1]])
+        plt.xticks([0, np.max(tspan)], labels=[0, steps])
 
-count = 0
-for i in spike_ts:
-    if i == 1:
-        count += 1
+        # X labels
+        if xlabels and i-1 < len(xlabels):
+            plt.xlabel(xlabels[i-1])
+        else:
+            plt.xlabel('time step')
 
-print(count)
+        # Y labels
+        if ylabels and i-1 < len(ylabels):
+            plt.ylabel(ylabels[i-1])
+        else:
+            plt.ylabel('$V_m$')
+
+        # Titles
+        if I_values and i-1 < len(I_values):
+            plt.title(f"I = {I_values[i-1]}")
+        elif titles and i-1 < len(titles):
+            plt.title(titles[i-1])
+
+        plt.grid(True)
+
+    plt.tight_layout()
+    plt.show()
+
+# print(len(VV))
+
+if __name__ == "__main__":
+    spikes_ts_list = []
+    uu_list = []
+    VV_list = []
+    avg_spike_count_list = []
+    I_input_vals = [1, 10, 20, 30, 40, 50, 60]
+    I_values=[]
+
+    for I in range(0, 61, 2):
+        spike_ts, uu, VV, avg_spike_count, spike_count = simulation_block(
+            a, b, c, d, V, u, I_input=I
+        )
+        avg_spike_count_list.append({"I_input": I, "avg_spike_count": avg_spike_count})
+
+    avg_spike_count_df = pd.DataFrame(avg_spike_count_list)
+
+    avg_spike_count_df.to_csv('./AVG_R_VALUES.csv', index=False)
+
+
+    for I in range(1, 61, 10):
+        spike_ts, uu, VV, avg_spike_count, spike_count = simulation_block(
+            a, b, c, d, V, u, I_input=I
+        )
+        spikes_ts_list.append(spike_ts)
+
+        uu_list.append(uu)
+        VV_list.append(VV)
+        I_values.append(I)
+
+
+    plot_subgraphs(VV_list, tspan, steps, I_values)
+
+
+
+
